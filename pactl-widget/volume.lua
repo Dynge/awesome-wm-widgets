@@ -215,7 +215,7 @@ local function worker(user_args)
     end
 
     volume.widget:buttons(
-            awful.util.table.join(
+            gears.table.join(
                     awful.button({}, 1, function() volume:toggle() end),
                     awful.button({}, 2, function() volume:mixer() end),
                     awful.button({}, 3, function() volume:popup() end),

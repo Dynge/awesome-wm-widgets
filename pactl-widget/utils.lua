@@ -16,13 +16,4 @@ function utils.split(string_to_split, separator)
     return t
 end
 
-function utils.popen_and_return(cmd)
-    local handle = io.popen(cmd)
-    local result = handle:read("*a")
-    handle:close()
-
-    return result
-end
-
-
 return utils

@@ -16,34 +16,6 @@ function pactl.mute_toggle(device)
     spawn('pactl set-sink-mute ' .. device .. ' toggle', false)
 end
 
-function pactl.get_volume(device)
-    local stdout = utils.popen_and_return('pactl get-sink-volume ' .. device)
-
-    local volsum, volcnt = 0, 0
-    for vol in string.gmatch(stdout, "(%d?%d?%d)%%") do
-        vol = tonumber(vol)
-        if vol ~= nil then
-            volsum = volsum + vol
-            volcnt = volcnt + 1
-        end
-    end
-
-    if volcnt == 0 then
-        return nil
-    end
-
-    return volsum / volcnt
-end
-
-function pactl.get_mute(device)
-    local stdout = utils.popen_and_return('LC_ALL=C pactl get-sink-mute ' .. device)
-    if string.find(stdout, "yes") then
-        return true
-    else
-        return false
-    end
-end
-
 function pactl.get_volume_and_mute_async(device, callback)
     assert(type(device) == "string")
     assert(type(callback) == "function")
@@ -73,9 +45,7 @@ function pactl.get_volume_and_mute_async(device, callback)
     )
 end
 
-function pactl.get_sinks_and_sources()
-    local default_sink = utils.trim(utils.popen_and_return('pactl get-default-sink'))
-    local default_source = utils.trim(utils.popen_and_return('pactl get-default-source'))
+local function parse_sinks_and_sources(default_sink, default_source, output)
 
     local sinks = {}
     local sources = {}
@@ -86,7 +56,10 @@ function pactl.get_sinks_and_sources()
     local value
     local in_section
 
-    for line in utils.popen_and_return('LC_ALL=C pactl list'):gmatch('[^\r\n]*') do
+    local lines = 0
+    for line in output:gmatch('[^\r\n]*') do
+        lines = lines + 1
+        if lines > 4096 then return {}, {} end
 
         if string.match(line, '^%a+ #') then
             in_section = nil
@@ -143,6 +116,24 @@ function pactl.get_sinks_and_sources()
     end
 
     return sinks, sources
+end
+
+function pactl.get_sinks_and_sources_async(callback)
+    assert(type(callback) == "function")
+
+    spawn.easy_async_with_shell(
+        "timeout 2s sh -c 'printf \"__SINK__\\n\"; pactl get-default-sink; printf \"__SOURCE__\\n\"; "
+            .. "pactl get-default-source; printf \"__LIST__\\n\"; LC_ALL=C pactl list'",
+        function(stdout)
+            local sink, source, output = stdout:match("^__SINK__\n(.-)__SOURCE__\n(.-)__LIST__\n(.*)$")
+            if not output then
+                callback({}, {})
+                return
+            end
+
+            callback(parse_sinks_and_sources(utils.trim(sink), utils.trim(source), output))
+        end
+    )
 end
 
 function pactl.set_default(type, name)

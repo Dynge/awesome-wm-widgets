@@ -135,17 +135,20 @@ local function build_header_row(text)
 end
 
 local function rebuild_popup()
+    if popup.is_rebuilding then return end
+    popup.is_rebuilding = true
     for i = 0, #rows do
         rows[i]=nil
     end
 
-    local sinks, sources = pactl.get_sinks_and_sources()
-    table.insert(rows, build_header_row("SINKS"))
-    table.insert(rows, build_rows(sinks, function() rebuild_popup() end, "sink"))
-    table.insert(rows, build_header_row("SOURCES"))
-    table.insert(rows, build_rows(sources, function() rebuild_popup() end, "source"))
-
-    popup:setup(rows)
+    pactl.get_sinks_and_sources_async(function(sinks, sources)
+        popup.is_rebuilding = false
+        table.insert(rows, build_header_row("SINKS"))
+        table.insert(rows, build_rows(sinks, function() rebuild_popup() end, "sink"))
+        table.insert(rows, build_header_row("SOURCES"))
+        table.insert(rows, build_rows(sources, function() rebuild_popup() end, "source"))
+        popup:setup(rows)
+    end)
 end
 
 local function worker(user_args)
@@ -166,12 +169,16 @@ local function worker(user_args)
     end
 
     local is_refreshing = false
+    local last_volume
     local function update_graphic(widget)
         if is_refreshing then return end
         is_refreshing = true
         pactl.get_volume_and_mute_async(device, function(vol, muted)
             is_refreshing = false
-            if vol ~= nil then widget:set_volume_level(vol) end
+            if vol ~= nil then
+                last_volume = vol
+                widget:set_volume_level(vol)
+            end
             if muted == true then widget:mute() end
             if muted == false then widget:unmute() end
         end)
@@ -230,7 +237,7 @@ local function worker(user_args)
         awful.tooltip {
             objects        = { volume.widget },
             timer_function = function()
-                return pactl.get_volume(device) .. " %"
+                return last_volume and last_volume .. " %" or "Unknown"
             end,
         }
     end

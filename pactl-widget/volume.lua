@@ -165,17 +165,16 @@ local function worker(user_args)
         volume.widget = widget_types[widget_type].get_widget(args)
     end
 
+    local is_refreshing = false
     local function update_graphic(widget)
-        local vol = pactl.get_volume(device)
-        if vol ~= nil then
-            widget:set_volume_level(vol)
-        end
-
-        if pactl.get_mute(device) then
-            widget:mute()
-        else
-            widget:unmute()
-        end
+        if is_refreshing then return end
+        is_refreshing = true
+        pactl.get_volume_and_mute_async(device, function(vol, muted)
+            is_refreshing = false
+            if vol ~= nil then widget:set_volume_level(vol) end
+            if muted == true then widget:mute() end
+            if muted == false then widget:unmute() end
+        end)
     end
 
     function volume:inc(s)

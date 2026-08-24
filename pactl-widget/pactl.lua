@@ -44,6 +44,35 @@ function pactl.get_mute(device)
     end
 end
 
+function pactl.get_volume_and_mute_async(device, callback)
+    assert(type(device) == "string")
+    assert(type(callback) == "function")
+
+    spawn.easy_async_with_shell(
+        "timeout 2s sh -c 'pactl get-sink-volume "
+            .. device
+            .. "; printf \"__MUTE__\\n\"; LC_ALL=C pactl get-sink-mute "
+            .. device
+            .. "'",
+        function(stdout)
+            local volume_output, mute_output = stdout:match("^(.-)__MUTE__\n(.*)$")
+            if not volume_output then
+                callback(nil, nil)
+                return
+            end
+
+            local volume, channels = 0, 0
+            for level in volume_output:gmatch("(%d?%d?%d)%%") do
+                if channels == 32 then break end
+                volume = volume + tonumber(level)
+                channels = channels + 1
+            end
+
+            callback(channels > 0 and volume / channels or nil, mute_output:find("yes") ~= nil)
+        end
+    )
+end
+
 function pactl.get_sinks_and_sources()
     local default_sink = utils.trim(utils.popen_and_return('pactl get-default-sink'))
     local default_source = utils.trim(utils.popen_and_return('pactl get-default-source'))

@@ -222,7 +222,7 @@ local function worker(user_args)
 	end)
 
     popup:buttons(
-            awful.util.table.join(
+            gears.table.join(
                     awful.button({}, next_month_button, function()
                         local a = cal:get_date()
                         a.month = a.month + 1

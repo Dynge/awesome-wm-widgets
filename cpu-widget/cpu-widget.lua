@@ -131,7 +131,7 @@ local function worker(user_args)
     popup:connect_signal("mouse::leave", function() is_update = true end)
 
     cpugraph_widget:buttons(
-            awful.util.table.join(
+            gears.table.join(
                     awful.button({}, 1, function()
                         if popup.visible then
                             popup.visible = not popup.visible
@@ -273,7 +273,7 @@ local function worker(user_args)
                             row:connect_signal("mouse::leave", function() kill_proccess_button.icon.opacity = 0.1 end)
 
                             kill_proccess_button:buttons(
-                                awful.util.table.join( awful.button({}, 1, function()
+                                gears.table.join( awful.button({}, 1, function()
                                     row:set_bg('#ff0000')
                                     awful.spawn.with_shell('kill -9 ' .. pid)
                                 end) ) )

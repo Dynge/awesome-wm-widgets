@@ -82,7 +82,7 @@ local function worker(user_args)
     )
 
     ramgraph_widget:buttons(
-        awful.util.table.join(
+         gears.table.join(
            awful.button({}, 1, function()
                  popup:get_widget().data_list = {
                     {'used ' .. getPercentage(used + used_swap), used + used_swap},

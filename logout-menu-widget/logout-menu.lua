@@ -109,7 +109,7 @@ local function worker(user_args)
             end
         end)
 
-        row:buttons(awful.util.table.join(awful.button({}, 1, function()
+        row:buttons(gears.table.join(awful.button({}, 1, function()
             popup.visible = not popup.visible
             logout_menu_widget:set_bg('#00000000')
             item.command()
@@ -120,7 +120,7 @@ local function worker(user_args)
     popup:setup(rows)
 
     logout_menu_widget:buttons(
-            awful.util.table.join(
+            gears.table.join(
                     awful.button({}, 1, function()
                         if popup.visible then
                             popup.visible = not popup.visible

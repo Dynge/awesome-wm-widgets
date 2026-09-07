@@ -88,7 +88,7 @@ local factory = function(opts)
 		end
 	end
 
-	widget:buttons(awful.util.table.join(awful.button({}, 1, function()
+	widget:buttons(gears.table.join(awful.button({}, 1, function()
 		toggle()
 	end)))
 	return widget
